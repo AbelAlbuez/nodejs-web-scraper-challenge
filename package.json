@@ -1,0 +1,25 @@
+{
+  "name": "nodejs-web-scraper-challenge",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AbelAlbuez/nodejs-web-scraper-challenge.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AbelAlbuez/nodejs-web-scraper-challenge/issues"
+  },
+  "homepage": "https://github.com/AbelAlbuez/nodejs-web-scraper-challenge#readme",
+  "dependencies": {
+    "puppeteer": "^24.30.0"
+  }
+}

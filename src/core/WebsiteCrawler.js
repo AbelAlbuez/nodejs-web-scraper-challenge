@@ -1,20 +1,13 @@
 const puppeteer = require('puppeteer');
 
-/**
- * Base class for web scraping with Puppeteer.
- * Handles browser lifecycle and navigation. Child classes handle data extraction.
- */
+// Base crawler class for web scraping
 class WebsiteCrawler {
   constructor() {
     this.browser = null;
     this.page = null;
   }
 
-  /**
-   * Launches Puppeteer and opens a new page.
-   * @returns {Promise<void>}
-   * @throws {Error} If Puppeteer launch fails
-   */
+  // Opens browser and creates new page
   async openBrowser() {
     try {
       this.browser = await puppeteer.launch({
@@ -22,7 +15,8 @@ class WebsiteCrawler {
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage'
+          '--disable-dev-shm-usage',
+          '--disable-blink-features=AutomationControlled'
         ]
       });
 
@@ -32,23 +26,25 @@ class WebsiteCrawler {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       );
       
+      // Hide webdriver property
+      await this.page.evaluateOnNewDocument(() => {
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false,
+        });
+      });
+      
       this.page.setDefaultTimeout(30000);
 
     } catch (error) {
       await this.closeBrowser();
-      throw new Error(`Failed to open browser: ${error.message}`);
+      throw new Error(`Browser launch failed: ${error.message}`);
     }
   }
 
-  /**
-   * Navigates to a URL.
-   * @param {string} url - Target URL
-   * @returns {Promise<void>}
-   * @throws {Error} If browser is not open or navigation fails
-   */
+  // Navigates to URL
   async goToPage(url) {
     if (!this.browser || !this.page) {
-      throw new Error('Browser is not open. Call openBrowser() first.');
+      throw new Error('Browser not initialized');
     }
 
     try {
@@ -57,14 +53,11 @@ class WebsiteCrawler {
         timeout: 30000
       });
     } catch (error) {
-      throw new Error(`Navigation failed: ${error.message}`);
+      throw new Error('Navigation failed');
     }
   }
 
-  /**
-   * Closes browser and page. Never throws - catches errors internally.
-   * @returns {Promise<void>}
-   */
+  // Closes browser - never throws
   async closeBrowser() {
     try {
       if (this.page) {
@@ -82,19 +75,10 @@ class WebsiteCrawler {
     }
   }
 
-  /**
-   * Checks if browser and page are ready.
-   * @returns {boolean}
-   */
   isReady() {
     return this.browser !== null && this.page !== null;
   }
 
-  /**
-   * Extracts text from the first matching element.
-   * @param {string} selector - CSS selector
-   * @returns {Promise<string|null>}
-   */
   async extractText(selector) {
     try {
       const text = await this.page.$eval(
@@ -107,11 +91,6 @@ class WebsiteCrawler {
     }
   }
 
-  /**
-   * Extracts text from all matching elements.
-   * @param {string} selector - CSS selector
-   * @returns {Promise<Array<string>>}
-   */
   async extractTextFromAll(selector) {
     try {
       const texts = await this.page.$$eval(

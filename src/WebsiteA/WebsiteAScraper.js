@@ -1,23 +1,16 @@
 const WebsiteCrawler = require('../core/WebsiteCrawler');
 
-/**
- * Scraper for books.toscrape.com
- */
 class WebsiteAScraper extends WebsiteCrawler {
   constructor() {
     super();
     this.baseUrl = 'https://books.toscrape.com/';
   }
 
-  /**
-   * Main scraping method.
-   * @returns {Promise<Object>} { title, products[], scrapedAt }
-   * @throws {Error} If extraction fails
-   */
   async scrape() {
     try {
       await this.openBrowser();
       await this.goToPage(this.baseUrl);
+      // console.log('Starting extraction...');
       const data = await this.extractPageData();
       console.log(`[WebsiteA] Extracted ${data.products.length} products`);
       return data;
@@ -28,22 +21,17 @@ class WebsiteAScraper extends WebsiteCrawler {
     }
   }
 
-  /**
-   * Extracts data from the current page.
-   * @returns {Promise<Object>} { title, products[], scrapedAt }
-   * @throws {Error} If product list cannot be parsed
-   */
   async extractPageData() {
     const pageTitle = await this.page.title();
 
     const products = await this.page.$$eval('article.product_pod', articles => {
       return articles.map(article => {
-        const titleElement = article.querySelector('h3 a');
-        const priceElement = article.querySelector('.price_color');
+        const title = article.querySelector('h3 a');
+        const price = article.querySelector('.price_color');
 
         return {
-          name: titleElement ? titleElement.getAttribute('title') : 'N/A',
-          price: priceElement ? priceElement.textContent.trim() : 'N/A'
+          name: title ? title.getAttribute('title') : 'N/A',
+          price: price ? price.textContent.trim() : 'N/A'
         };
       });
     });
@@ -59,17 +47,13 @@ class WebsiteAScraper extends WebsiteCrawler {
     };
   }
 
-  /**
-   * Scrapes multiple pages with pagination.
-   * @param {number} numPages - Number of pages to scrape
-   * @returns {Promise<Object>} Combined data from all pages
-   */
+  // TODO: add retry logic here
   async scrapeMultiplePages(numPages = 1) {
     try {
       await this.openBrowser();
 
       const allProducts = [];
-      let currentPage = 1;
+      var currentPage = 1;
 
       await this.goToPage(this.baseUrl);
 
@@ -101,10 +85,6 @@ class WebsiteAScraper extends WebsiteCrawler {
     }
   }
 
-  /**
-   * Navigates to the next page.
-   * @returns {Promise<boolean>} true if next page exists
-   */
   async goToNextPage() {
     try {
       const nextButton = await this.page.$('.next a');

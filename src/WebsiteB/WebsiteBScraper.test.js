@@ -14,7 +14,7 @@ describe('WebsiteBScraper', () => {
   });
 
   test('initializes with baseUrl', () => {
-    expect(scraper.baseUrl).toBe('https://medium.com/tag/programming');
+    expect(scraper.baseUrl).toBe('https://news.ycombinator.com/');
   });
 
   test('extends WebsiteCrawler', () => {
@@ -33,10 +33,10 @@ describe('WebsiteBScraper', () => {
     expect(data).toHaveProperty('latestPost');
     expect(data).toHaveProperty('scrapedAt');
     expect(data).toHaveProperty('source');
-    expect(data.source).toBe('medium.com/tag/programming');
-  }, 60000);
+    expect(data.source).toBe('news.ycombinator.com');
+  }, 30000);
 
-  test('returns latestPost with title and author', async () => {
+  test('returns latestPost with title, author and comments', async () => {
     const data = await scraper.scrape();
 
     expect(data.latestPost).toHaveProperty('title');
@@ -48,30 +48,18 @@ describe('WebsiteBScraper', () => {
     expect(data.latestPost.title.length).toBeGreaterThan(0);
     
     expect(typeof data.latestPost.author).toBe('string');
-    expect(data.latestPost.author).not.toBe('N/A');
     expect(data.latestPost.author.length).toBeGreaterThan(0);
-  }, 60000);
-
-  test('returns comments as number or null', async () => {
-    const data = await scraper.scrape();
-
-    const commentsValue = data.latestPost.comments;
     
-    expect(
-      typeof commentsValue === 'number' || commentsValue === null
-    ).toBe(true);
-
-    if (typeof commentsValue === 'number') {
-      expect(commentsValue).toBeGreaterThanOrEqual(0);
-    }
-  }, 60000);
+    expect(typeof data.latestPost.comments).toBe('number');
+    expect(data.latestPost.comments).toBeGreaterThanOrEqual(0);
+  }, 30000);
 
   test('closes browser after scraping', async () => {
     await scraper.scrape();
     
     expect(scraper.browser).toBeNull();
     expect(scraper.page).toBeNull();
-  }, 60000);
+  }, 30000);
 
   test('includes valid ISO timestamp', async () => {
     const data = await scraper.scrape();
@@ -80,12 +68,12 @@ describe('WebsiteBScraper', () => {
     const date = new Date(data.scrapedAt);
     expect(date.getTime()).toBeGreaterThan(0);
     expect(isNaN(date.getTime())).toBe(false);
-  }, 60000);
+  }, 30000);
 
   test('extracts post data with required fields', async () => {
     await scraper.openBrowser();
     await scraper.goToPage(scraper.baseUrl);
-    await scraper.page.waitForSelector('article', { timeout: 15000 });
+    await scraper.page.waitForSelector('.athing', { timeout: 10000 });
     
     const data = await scraper.extractLatestPost();
 
@@ -93,29 +81,29 @@ describe('WebsiteBScraper', () => {
     expect(data.latestPost).toHaveProperty('title');
     expect(data.latestPost).toHaveProperty('author');
     expect(data.latestPost).toHaveProperty('comments');
-  }, 60000);
+  }, 30000);
 
-  test('does not return N/A for title or author', async () => {
+  test('does not return N/A for title', async () => {
     await scraper.openBrowser();
     await scraper.goToPage(scraper.baseUrl);
-    await scraper.page.waitForSelector('article', { timeout: 15000 });
+    await scraper.page.waitForSelector('.athing', { timeout: 10000 });
     
     const data = await scraper.extractLatestPost();
 
     expect(data.latestPost.title).not.toBe('N/A');
-    expect(data.latestPost.author).not.toBe('N/A');
-  }, 60000);
+    expect(data.latestPost.title.length).toBeGreaterThan(0);
+  }, 30000);
 
   test('includes source and timestamp', async () => {
     await scraper.openBrowser();
     await scraper.goToPage(scraper.baseUrl);
-    await scraper.page.waitForSelector('article', { timeout: 15000 });
+    await scraper.page.waitForSelector('.athing', { timeout: 10000 });
     
     const data = await scraper.extractLatestPost();
 
-    expect(data.source).toBe('medium.com/tag/programming');
+    expect(data.source).toBe('news.ycombinator.com');
     expect(data.scrapedAt).toBeTruthy();
-  }, 60000);
+  }, 30000);
 
   test('handles browser close gracefully', async () => {
     await scraper.openBrowser();
@@ -133,27 +121,22 @@ describe('WebsiteBScraper', () => {
     expect(scraper.isReady()).toBe(false);
   }, 30000);
 
-  test('throws error if page has no articles', async () => {
+  test('throws error if page has no stories', async () => {
     await scraper.openBrowser();
-    await scraper.goToPage('https://medium.com/tag/nonexistent-tag-12345');
+    await scraper.page.setContent('<html><body></body></html>');
     
-    await expect(scraper.extractLatestPost()).rejects.toThrow();
-  }, 60000);
+    await expect(scraper.extractLatestPost()).rejects.toThrow('No story found on page');
+  }, 30000);
 
   test('closes browser even on error', async () => {
     try {
       await scraper.openBrowser();
-      await scraper.goToPage('https://medium.com/invalid-url-path-12345');
+      await scraper.page.setContent('<html><body></body></html>');
       await scraper.extractLatestPost();
     } catch (error) {
-      // Expected to fail
     }
     
     await scraper.closeBrowser();
     expect(scraper.browser).toBeNull();
-  }, 60000);
-
-  test.skip('should handle rate limiting from Medium', () => {
-    // TODO: implement rate limiting handling
-  });
+  }, 30000);
 });
